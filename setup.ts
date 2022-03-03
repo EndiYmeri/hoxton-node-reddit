@@ -5,9 +5,9 @@ const db = new Database('./data.db',{
 })
 
 const users = [
-    {username: "Endi1", email: "endi1ymeri20@gmail.com", password: "1234"},
-    {username: "Endi2", email: "endi2ymeri20@gmail.com", password: "1234"},
-    {username: "Endi3", email: "endi3ymeri20@gmail.com", password: "1234"}
+    {name:"Endi Ymeri", username: "Endi1", email: "endi1ymeri20@gmail.com", password: "1234"},
+    {name:"Filan Fisteku", username: "Endi2", email: "endi2ymeri20@gmail.com", password: "1234"},
+    {name:"Fistek Filani", username: "Endi3", email: "endi3ymeri20@gmail.com", password: "1234"}
 ]
 const subreddits = [
     {name: "firstPosts"},
@@ -15,13 +15,21 @@ const subreddits = [
     {name: "thirdPosts"}
 ]
 
+const subredditUsers = [
+    {subredditID: 1, userID:1, dateJoined: "3/03/22"},
+    {subredditID: 1, userID:2, dateJoined: "3/03/22"},
+    {subredditID: 2, userID:3, dateJoined: "3/03/22"},
+    {subredditID: 2, userID:1, dateJoined: "3/03/22"},
+    {subredditID: 3, userID:1, dateJoined: "3/03/22"}
+]
+
 const posts = [
-    {post: "My first reddit post", user: 1, subreddit: 1},
-    {post: "My first reddit post", user: 2, subreddit: 1},
-    {post: "My second reddit post", user: 3, subreddit: 2},
-    {post: "My third reddit post", user: 2, subreddit: 3},
-    {post: "My second reddit post", user: 1, subreddit: 2},
-    {post: "My third reddit post", user: 1, subreddit: 2}
+    {title: "My first reddit post",  content:"My post content", user: 1, subreddit: 1},
+    {title: "My first reddit post",  content:"My post content", user: 2, subreddit: 1},
+    {title: "My second reddit post", content:"My post content",  user: 3, subreddit: 2},
+    {title: "My third reddit post",  content:"My post content", user: 2, subreddit: 3},
+    {title: "My second reddit post", content:"My post content",  user: 1, subreddit: 2},
+    {title: "My third reddit post",  content:"My post content", user: 1, subreddit: 2}
 ]
 
 const comments = [
@@ -35,6 +43,7 @@ const comments = [
 db.exec(`
 DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS subredditsUsers;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS subreddits;
 
@@ -42,20 +51,30 @@ DROP TABLE IF EXISTS subreddits;
 
 CREATE TABLE IF NOT EXISTS users(
     id INTEGER PRIMARY KEY,
-    username TEXT NOT NULL,
-    email TEXT NOT NULL,
+    name TEXT NOT NULL,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL
 );
-
 
 CREATE TABLE IF NOT EXISTS subreddits(
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS subredditUsers(
+    id INTEGER PRIMARY KEY,
+    subredditID INTEGER NOT NULL,
+    userID INTEGER NOT NULL,
+    dateJoined TEXT NOT NULL, 
+    FOREIGN KEY (subredditID) REFERENCES subreddits(id),
+    FOREIGN KEY (userID) REFERENCES users(id)
+);
+
 CREATE TABLE IF NOT EXISTS posts(
     id INTEGER PRIMARY KEY,
-    post TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
     user INTEGER NOT NULL,
     rating INTEGER DEFAULT 0, 
     upvotes INTEGER DEFAULT 0,
@@ -78,19 +97,23 @@ CREATE TABLE IF NOT EXISTS comments(
 
 `)
 
-const createUser = db.prepare(`INSERT INTO users (username, email, password) VALUES(?,?,?) `)
+const createUser = db.prepare(`INSERT INTO users (name,username, email, password) VALUES(?,?,?,?) `)
 const createSubreddit = db.prepare(`INSERT INTO subreddits (name) VALUES(?)`)
-const createPost = db.prepare(`INSERT INTO posts (post, user, subreddit) VALUES(?,?,?) `)
+const createSubredditUSers = db.prepare(`INSERT INTO subredditUsers(subredditID, userID, dateJoined) VALUES (?,?,?)`)
+const createPost = db.prepare(`INSERT INTO posts (title, content, user, subreddit) VALUES(?,?,?,?) `)
 const createComment = db.prepare(`INSERT INTO comments (comment, user, post) VALUES(?,?,?) `)
 
 for(const user of users){
-    createUser.run(user.username, user.email, user.password)
+    createUser.run(user.name, user.username, user.email, user.password)
 }
 for(const subreddit of subreddits){
     createSubreddit.run(subreddit.name)
 }
+for(const subredditUser of subredditUsers){
+    createSubredditUSers.run(subredditUser.subredditID, subredditUser.userID, subredditUser.dateJoined)
+}
 for(const post of posts){
-    createPost.run(post.post, post.user, post.subreddit)
+    createPost.run(post.title, post.content, post.user, post.subreddit)
 }
 for(const comment of comments){
     createComment.run(comment.comment, comment.user, comment.post)
