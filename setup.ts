@@ -10,9 +10,9 @@ const users = [
     {name:"Fistek Filani", username: "Endi3", email: "endi3ymeri20@gmail.com", password: "1234"}
 ]
 const subreddits = [
-    {name: "firstPosts"},
-    {name: "secondPosts"},
-    {name: "thirdPosts"}
+    {name: "firstPosts", dateCreated: "04/03/22"},
+    {name: "secondPosts", dateCreated: "04/03/22"},
+    {name: "thirdPosts", dateCreated: "04/03/22"}
 ]
 
 const subredditUsers = [
@@ -43,23 +43,26 @@ const comments = [
 db.exec(`
 DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS posts;
-DROP TABLE IF EXISTS subredditsUsers;
+DROP TABLE IF EXISTS subredditUsers;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS subreddits;
-
-
 
 CREATE TABLE IF NOT EXISTS users(
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
     username TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    CHECK (name <> ''),
+    CHECK (username <> ''),
+    CHECK (email <> ''),
+    CHECK (password <> '')
 );
 
 CREATE TABLE IF NOT EXISTS subreddits(
     id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL
+    name TEXT NOT NULL,
+    dateCreated TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS subredditUsers(
@@ -67,8 +70,8 @@ CREATE TABLE IF NOT EXISTS subredditUsers(
     subredditID INTEGER NOT NULL,
     userID INTEGER NOT NULL,
     dateJoined TEXT NOT NULL, 
-    FOREIGN KEY (subredditID) REFERENCES subreddits(id),
-    FOREIGN KEY (userID) REFERENCES users(id)
+    FOREIGN KEY (subredditID) REFERENCES subreddits(id) ON DELETE CASCADE,
+    FOREIGN KEY (userID) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS posts(
@@ -80,8 +83,8 @@ CREATE TABLE IF NOT EXISTS posts(
     upvotes INTEGER DEFAULT 0,
     downvotes INTEGER DEFAULT 0,
     subreddit INTEGER,
-    FOREIGN KEY (user) REFERENCES users(id),
-    FOREIGN KEY (subreddit) REFERENCES subreddits(id)
+    FOREIGN KEY (user) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (subreddit) REFERENCES subreddits(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS comments(
@@ -92,13 +95,12 @@ CREATE TABLE IF NOT EXISTS comments(
     upvotes INTEGER DEFAULT 0,
     downvotes INTEGER DEFAULT 0,
     FOREIGN KEY (user) REFERENCES users(id),
-    FOREIGN KEY (post) REFERENCES posts(id)
+    FOREIGN KEY (post) REFERENCES posts(id) ON DELETE CASCADE
 );
-
 `)
 
 const createUser = db.prepare(`INSERT INTO users (name,username, email, password) VALUES(?,?,?,?) `)
-const createSubreddit = db.prepare(`INSERT INTO subreddits (name) VALUES(?)`)
+const createSubreddit = db.prepare(`INSERT INTO subreddits (name, dateCreated) VALUES(?,?)`)
 const createSubredditUSers = db.prepare(`INSERT INTO subredditUsers(subredditID, userID, dateJoined) VALUES (?,?,?)`)
 const createPost = db.prepare(`INSERT INTO posts (title, content, user, subreddit) VALUES(?,?,?,?) `)
 const createComment = db.prepare(`INSERT INTO comments (comment, user, post) VALUES(?,?,?) `)
@@ -107,7 +109,7 @@ for(const user of users){
     createUser.run(user.name, user.username, user.email, user.password)
 }
 for(const subreddit of subreddits){
-    createSubreddit.run(subreddit.name)
+    createSubreddit.run(subreddit.name, subreddit.dateCreated)
 }
 for(const subredditUser of subredditUsers){
     createSubredditUSers.run(subredditUser.subredditID, subredditUser.userID, subredditUser.dateJoined)
